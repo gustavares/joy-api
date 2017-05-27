@@ -3,9 +3,9 @@ const pool = require('./../config/db.pool.js');
 
 module.exports = {
     get: {
-        byId: function (req, res) {
-            const id = req.params.id;
-            const query = "SELECT * FROM MEDICO WHERE MEDICO_ID = " + id;
+        byCrm: function (req, res) {
+            const crm = req.params.crm;
+            const query = "SELECT * FROM MEDICO WHERE CRM = " + crm;
             var deferred = q.defer();
 
             pool.open()
@@ -38,6 +38,9 @@ module.exports = {
             }
             return deferred.promise; 
         }
+    },
+    post: function (req, res) {
+        
     }
 
 };
