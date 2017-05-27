@@ -20,9 +20,6 @@ const credentials = {
 const cn = `DATABASE=${credentials.db};HOSTNAME=${credentials.hostname};PORT=${credentials.port};PROTOCOL=TCPIP;UID=${credentials.username};PWD=${credentials.password}`;
 
 const pool = new Pool();
-// pool.init(5, cn);
-// pool.setMaxPoolSize(20);
-// pool.setConnectTimeout(30);
 
 module.exports = {
     open: open,
@@ -57,8 +54,8 @@ function open() {
  */
 function query(conn, sql, newValues) {
     const deferred = Q.defer();
-
-    conn.querySync(sql, newValues, function(error, res) {
+    
+    conn.query(sql, newValues, function(error, res) {
         if (error) {
             deferred.reject(error.message);
         } else {
