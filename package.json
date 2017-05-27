@@ -18,6 +18,7 @@
   },
   "homepage": "https://github.com/gustavares/joy-api#readme",
   "dependencies": {
-    "express": "^4.15.3"
+    "express": "^4.15.3",
+    "ibm_db": "^2.0.0"
   }
 }
