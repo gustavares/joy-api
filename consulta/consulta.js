@@ -12,10 +12,10 @@ module.exports = {
             const query = "SELECT * FROM CONSULTA WHERE INICIO LIKE '" + day + "/" + month + "/" + year + "%' AND CRM = '" + crm + "'";
             var deferred = q.defer();
 
-             ibmdb.open()
+            ibmdb.open()
                 .then(executeQuery)
                 .then(success, fail)
-                .finally(function() {
+                .finally(function () {
                     ibmdb.close();
                 });
 
@@ -40,10 +40,47 @@ module.exports = {
                     'error': '500 could not retrieve data from the database'
                 });
             }
-            return deferred.promise; 
+            return deferred.promise;
+        },
+        byMonth: function(req, res) {
+            const crm = req.params.crm;
+            const month = req.params.month;
+            const year = req.params.year;
+            const query = "SELECT * FROM CONSULTA WHERE INICIO LIKE '" + month + "/" + year + "%' AND CRM = '" + crm + "'";
+            var deferred = q.defer();
+
+            ibmdb.open()
+                .then(executeQuery)
+                .then(success, fail)
+                .finally(function () {
+                    ibmdb.close();
+                });
+
+            function executeQuery(conn) {
+                //return of the query
+                console.log("executing query");
+                return ibmdb.query(conn, query);
+            }
+
+            function success(result) {
+                //if success to be executed
+                console.log("success");
+                res.status(200).json(result);
+
+                deferred.resolve(result);
+            }
+
+            function fail(err) {
+                console.log(err);
+
+                deferred.reject({
+                    'error': '500 could not retrieve data from the database'
+                });
+            }
+            return deferred.promise;
         }
     },
-    post: function(req, res) {
+    post: function (req, res) {
         const crm = req.body.crm;
         const cpf = req.body.cpf;
         const start = moment(req.body.start, "DD-MM-YYYY HH-mm");
@@ -82,78 +119,64 @@ module.exports = {
     },
     insertAvailableTimes: function (crm, start, end) {
         let availableTimes = [];
-       
-        while(start.isBefore(end)) {
-            let minutesStart = start.minutes() < 10 ? ('0' + start.minutes()) : start.minutes();
-            
-            let month = start.month() + 1;
-            month = month < 10 ? ('0' + month) : month;
-            
-            
-            let startDate = 
-              start.date() + "/" +
-              month + "/" + // moment .months() is from 0 to 11
-              start.year() + " " +
-              start.hours() + ":" +
-              minutesStart;
 
-            let appointmentEnd = moment(startDate, "DD-MM-YYYY HH-mm").add(30, 'minutes');
+        console.log(start);
+        console.log(end);
+        start = new Date(start);
+        end = new Date(end);
 
-            let minutesEnd = appointmentEnd.minutes() < 10 ? ('0' + appointmentEnd.minutes()) : appointmentEnd.minutes();
+        let milliStart = start.getTime();
+        let milliEnd = end.getTime();
+        let gap = start.getTime() + (60 * 30 * 1000);
 
-            let endDate = 
-              appointmentEnd.date() + "/" +
-              month + "/" + 
-              appointmentEnd.year() + " " +
-              appointmentEnd.hours() + ":" +
-              minutesEnd;
+        let schedule = [{ start, end: new Date(gap) }];
 
-            availableTimes.push({
-                start: startDate,
-                end: endDate
-            });
-            
-            start.add(30, 'minutes');
+        while (gap < milliEnd) {
+            milliStart = gap;
+            gap = gap + (60 * 30 * 1000);
+
+            let time = {
+                start: new Date(milliStart),
+                end: new Date(gap),
+            };
+
+            if (gap <= milliEnd)
+                schedule = [...schedule, time]
         }
-        
-        let startAppointment, endAppointment;
-        const query = "INSERT INTO CONSULTA (crm, inicio, fim) values (" + crm + "," + startAppointment + "," + endAppointment + ")";
-        availableTimes.forEach(function(item) {
-            startAppointment = item.start;
-            endAppointment = item.end;
 
-            ibmdb.open()
-            .then(executeQuery)
-            .then(success, fail)
-            .finally(function() {
-                ibmdb.close();
-            });
+        console.log(schedule);
+
+        const queries = availableTimes.map(function (item) {
+            return "INSERT INTO CONSULTA (crm, inicio, fim) values (" + crm + ",'" + item.start + "','" + item.end + "')";
         });
-
-        var deferred = q.defer();
-    
-        function executeQuery(conn) {
-            //return of the query
-            console.log("executing query");
-            return ibmdb.query(conn, query);
-        }
-
-        function success(result) {
-            //if success to be executed
-            console.log("success");
-            res.status(200).json(result[0]);
-
-            deferred.resolve(result);
-        }
-
-        function fail(err) {
-            console.log(err);
-
-            deferred.reject({
-                'error': '500 could not retrieve data from the database'
-            });
-        }
-        return deferred.promise; 
-
+        console.log(queries);
+        queries.forEach(function (query) {
+            openConn(query);
+        });
     }
+}
+function openConn(query) {
+    ibmdb.open()
+        .then(conn => executeQuery(conn, query))
+        .then(success, fail)
+        .finally(function () {
+            ibmdb.close();
+        });
+}
+function executeQuery(conn, query) {
+    //return of the query
+    console.log("executing query");
+    return ibmdb.query(conn, query);
+}
+
+function success(result) {
+    //if success to be executed
+    console.log("success");
+    return true;
+}
+
+function fail(err) {
+    console.log(err);
+
+    throw new Error('500 could not retrieve data from the database');
 }

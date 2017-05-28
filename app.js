@@ -24,6 +24,7 @@ const horario = require('./horario/horario.js');
 
 app.get('/api/medico/:crm', medico.get.byCrm);
 app.get('/api/consulta/:crm/:day/:month/:year', consulta.get.byDay);
+app.get('/api/consulta/:crm/:month/:year', consulta.get.byMonth);
 app.get('/api/horario/:crm/:month/:year', horario.get.byDay);
 app.post('/api/horario/post', horario.post);
 
