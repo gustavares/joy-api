@@ -51,7 +51,7 @@ module.exports = {
         const end = moment(req.body.end, "DD-MM-YYYY HH-mm");
 
         // set doctor's available times
-        consulta.insertAvailableTimes(crm, start, end);
+        consulta.insertAvailableTimes(crm, req.body.start, req.body.end);
 
         let minutes = start.minutes() < 10 ? ('0' + start.minutes()) : start.minutes();
         let month = start.month() + 1;
